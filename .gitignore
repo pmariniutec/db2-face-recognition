@@ -1,0 +1,8 @@
+media/
+static/
+node_modules/
+build/
+dist/
+__pycache__/
+*.pyc
+.DS_STORE
