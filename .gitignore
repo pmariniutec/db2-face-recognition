@@ -29,3 +29,10 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Images
+*.jpg
+
+# venv
+
+/backend/venv/
