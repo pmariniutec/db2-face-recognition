@@ -1,63 +1,63 @@
-import face_recognition 
+import face_recognition
 import os
-import math 
+import math
 
-facesDirectory = "../media/images"
-queryImageFile = "../media/queries/query.png" 
+from django.conf import settings
 
-maxDistance = 10000
-amountOfImages = 13000
+image_database = os.path.join(settings.MEDIA_ROOT, 'images')
+output_image_path = '/media/images/'
 
-# Euclidian Distance Function
-def euclidianDistance(x, y):
+MAX_DISTANCE = 10000
+NUM_IMAGES = 5
+
+
+def euclidean_distance(x, y):
     if len(y) == 0:
-        return maxDistance
-    accumulate = 0
-    for i in range(len(y)):
-        accumulate += (x[i] - y[i])**2
+        return MAX_DISTANCE
+    accumulate = sum((i - j) ** 2 for i, j in zip(x, y))
     return math.sqrt(accumulate)
 
-def sortTuple(tup):
-    tup.sort(key = lambda x: x[1])
-    return tup
 
-def knnSearch(query, data, amountOfNeighbors):
+def knn_search(query, data, num_neighbors):
     results = []
     for index, row in enumerate(data):
-        distance = euclidianDistance(query, row)
+        distance = euclidean_distance(query, row)
         results.append((index, distance))
-    results = sortTuple(results)
+    results.sort(key=lambda x: x[1])
     results = [i[0] for i in results]
-    return results[:amountOfNeighbors]
+    return results[:num_neighbors]
 
-def loadImages(): 
-    imageFiles = os.listdir(facesDirectory)
-    imagesVector = []
-    for imageFile in imageFiles:
-        if imageFile[0] != ".":
-            image = face_recognition.load_image_file(facesDirectory + "/" + imageFile) 
-            encoding  = face_recognition.face_encodings(image)
+
+def load_images():
+    image_files = os.listdir(image_database)
+    images_list = []
+    for image_file in image_files:
+        if image_file[0] != '.':
+            image = face_recognition.load_image_file(
+                image_database + '/' + image_file)
+            encoding = face_recognition.face_encodings(image)
             if len(encoding):
-                imagesVector.append(encoding[0])
+                images_list.append(encoding[0])
             else:
-                imagesVector.append([])
-        if len(imagesVector) == amountOfImages:
+                images_list.append([])
+        if len(images_list) == NUM_IMAGES:
             break
-    return imagesVector
+    return images_list
 
-queryImage = face_recognition.load_image_file(queryImageFile)
-queryEncoding = face_recognition.face_encodings(queryImage)[0]
-# print(queryEncoding)
 
-imageList = os.listdir(facesDirectory) 
-cleanList = []
-for image in imageList:
-    if image[0] != ".": 
-        cleanList.append(image)
+def execute_query(query_image_path, num_neighbors):
+    query_image = face_recognition.load_image_file(query_image_path)
+    query_encoding = face_recognition.face_encodings(query_image)[0]
 
-dataImages = loadImages() 
+    image_list = os.listdir(image_database)
+    output = []
+    for image in image_list:
+        if image[0] != '.':
+            output.append(image)
 
-topList = knnSearch(queryEncoding, dataImages, 5) 
+    image_data = load_images()
 
-for element in topList: 
-    print(cleanList[element])
+    results = knn_search(query_encoding, image_data, num_neighbors)
+    return [{'url': output_image_path + output[element],
+             'title': output[element]}
+            for element in results]
